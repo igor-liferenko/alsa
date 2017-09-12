@@ -1,0 +1,13 @@
+diff --git a/pulse/client.conf b/pulse/client.conf
+index 7a428f7..2d88a76 100644
+--- a/pulse/client.conf
++++ b/pulse/client.conf
+@@ -22,7 +22,7 @@
+ ; default-server =
+ ; default-dbus-server =
+ 
+-; autospawn = yes
++autospawn = no
+ ; daemon-binary = /usr/bin/pulseaudio
+ ; extra-arguments = --log-target=syslog
+ 
