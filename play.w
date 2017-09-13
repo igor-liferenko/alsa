@@ -1,27 +1,6 @@
-@ @c
-/*
- * Simple sound playback using ALSA API and libasound.
- *
- * Compile:
- * $ cc -o play sound_playback.c -lasound
- * 
- * Usage:
- * $ ./play <sample_rate> <channels> <seconds> < <file>
- * 
- * Examples:
- * $ ./play 44100 2 5 < /dev/urandom
- * $ ./play 22050 1 8 < /path/to/file.wav
- *
- * Copyright (C) 2009 Alessandro Ghedini <alessandro@ghedini.me>
- * --------------------------------------------------------------
- * "THE BEER-WARE LICENSE" (Revision 42):
- * Alessandro Ghedini wrote this file. As long as you retain this
- * notice you can do whatever you want with this stuff. If we
- * meet some day, and you think this stuff is worth it, you can
- * buy me a beer in return.
- * --------------------------------------------------------------
- */
-
+@* Usage.
+  \.{./play <sample\_rate> <channels> <seconds> < <file>}
+@c
 #include <alsa/asoundlib.h>
 #include <stdio.h>
 
