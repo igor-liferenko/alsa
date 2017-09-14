@@ -3,6 +3,7 @@ In one of these direct access to kernel driver is used (without libasound):
   git clone https://github.com/ikle/test-alsa
   git clone https://github.com/robpennock/pi_guitar
 
-To use play.w on desktop, device must be specified as "sysdefault:CARD=Intel" (see "aplay -L")
+To use play.w on desktop (i.e., with pulseaudio), device must be specified
+as "sysdefault:CARD=Intel" (see "aplay -L")
 
 Read http://www.volkerschatz.com/noise/alsa.html
