@@ -92,7 +92,7 @@ int main(void)
 
 	snd_pcm_hw_params_get_period_time(hw_params, &tmp, NULL);
 
-        /* FIXME: snd_pcm_prepare() here ? - and check its exit status ? */
+        /* FIXME: snd_pcm_prepare here instead of below ? */
 
 	for (loops = (seconds * 1000000) / tmp; loops > 0; loops--) {
 		if (read(STDIN_FILENO, buff, buff_size) == 0) {
