@@ -1,7 +1,26 @@
 @* Usage.
-  \.{./play <file}
+  \.{./play </usr/share/sounds/alsa/Front_Center.wav}
 
-@d PCM_DEVICE "default"
+TODO: skip wav header (http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html)
+
+What you want is impossible in principle, regardless of PulseAudio specifically (i.e my statement
+applies to any kind of sound server with similar functionality) and ALSA speicifically (i.e my
+statement applies to any kind of direct HW access interface).
+
+The point is that for an HW device to function a stream of audio samples must be sent into it, and
+the device must be configured WRT sample rate. If a program takes control of a sound device, no
+other program can use it - how do you imagine one program sending 44100Hz samples and at the same
+time another program sending 96000Hz samples to the same device ?
+
+So PulseAudio is among other things a sophisticated mixer doing sample rate conversion when
+necessary and adding streams with coefficients (i.e. k1 * s1 + k2 * s2 + ... + kN * sN)  from
+different sources, the coefficients representing volumes, and sending the resulting stream into
+the HW device.
+
+I yet to have find out whether PulseAudio can be running using one sound card, and ALSA directly
+for another sound card (this is my setup - I have two physical sound cards).
+
+@d PCM_DEVICE "sysdefault:CARD=Intel"
 
 @c
 #include <alsa/asoundlib.h>
@@ -20,9 +39,9 @@ int main(void)
 	size_t buff_size;
 	unsigned int loops;
 
-	unsigned int rate = 8000;
+	unsigned int rate = 48000;
 	unsigned int channels = 1;
-	unsigned int seconds = 0;
+	unsigned int seconds = 10;
 
 	if ((err = snd_pcm_open(&play_handle, PCM_DEVICE, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
 	  printf("Can't open audio device %s: %s\n", PCM_DEVICE, snd_strerror(err));

@@ -1,13 +1,8 @@
-diff --git a/pulse/client.conf b/pulse/client.conf
-index 7a428f7..2d88a76 100644
---- a/pulse/client.conf
-+++ b/pulse/client.conf
-@@ -22,7 +22,7 @@
- ; default-server =
- ; default-dbus-server =
- 
--; autospawn = yes
-+autospawn = no
- ; daemon-binary = /usr/bin/pulseaudio
- ; extra-arguments = --log-target=syslog
- 
+In one of these direct access to kernel driver is used (without libasound):
+  git clone https://github.com/swetland/alsa
+  git clone https://github.com/ikle/test-alsa
+  git clone https://github.com/robpennock/pi_guitar
+
+To use play.w on desktop, device must be specified as "sysdefault:CARD=Intel" (see "aplay -L")
+
+Read http://www.volkerschatz.com/noise/alsa.html
