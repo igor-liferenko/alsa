@@ -1,5 +1,5 @@
 @* Usage.
-  \.{./play </usr/share/sounds/alsa/Front_Center.wav}
+  \.{./play </usr/share/sounds/alsa/Front_Center.wav} TODO: make this command work without changing PCM_DEVICE (see README)
 
 TODO: skip wav header (http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html)
 
