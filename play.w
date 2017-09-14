@@ -20,7 +20,7 @@ the HW device.
 I yet to have find out whether PulseAudio can be running using one sound card, and ALSA directly
 for another sound card (this is my setup - I have two physical sound cards).
 
-@d PCM_DEVICE "sysdefault:CARD=Intel"
+@d PCM_DEVICE "default"
 
 @c
 #include <alsa/asoundlib.h>
