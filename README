@@ -1,6 +1,4 @@
-In one of these direct access to kernel driver is used (without libasound):
+In this direct access to kernel driver is used (without libasound):
   git clone https://github.com/swetland/alsa
-  git clone https://github.com/ikle/test-alsa
-  git clone https://github.com/robpennock/pi_guitar
 
 Read http://www.volkerschatz.com/noise/alsa.html
