@@ -1,5 +1,6 @@
 @* Usage.
-  \.{./play </usr/share/sounds/alsa/Front_Center.wav} TODO: make this command work without changing PCM_DEVICE (see README)
+  \.{./play </usr/share/sounds/alsa/Front_Center.wav}
+TODO: make this command work without changing PCM_DEVICE (see README)
 
 TODO: skip wav header (http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/WAVE/WAVE.html)
 
@@ -20,7 +21,7 @@ the HW device.
 I yet to have find out whether PulseAudio can be running using one sound card, and ALSA directly
 for another sound card (this is my setup - I have two physical sound cards).
 
-@d PCM_DEVICE "default"
+@d PCM_DEVICE "sysdefault:CARD=Generic"
 
 @c
 #include <alsa/asoundlib.h>
