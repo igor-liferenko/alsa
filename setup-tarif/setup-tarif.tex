@@ -1,10 +1,87 @@
 %&тех
 \hsize=\pdfpagewidth \advance\hsize by-3cm
-\input docmy
 \pdfhorigin=2.5cm \hoffset=\pdfpagewidth \advance\hoffset-\hsize \advance\hoffset-2\pdfhorigin
 \output={\ifodd\pageno\hoffset=0pt\fi \plainoutput}
 
+\showboxdepth=\maxdimen
+\showboxbreadth=\maxdimen
+\tracingoutput=1
+
+\def\today{\number\year-\ifnum\month<10 0\fi\number\month-\ifnum\day<10 0\fi\number\day}
+\def\hours{\count255=\time \divide\count255 by60 \ifnum\count255<10 0\fi\number\count255
+  \multiply\count255 by-60 \advance\count255 by\time:\ifnum\count255<10 0\fi\number\count255}
+
+\def\rectangle#1#2#3#4{\vbox to0pt{\vss\hrule\kern-.3pt
+  \hbox to#3{\vrule height#1 depth#2\hss#4\hss\vrule}%
+  \kern-.3pt\hrule\kern-#2\kern-.1pt}}
+
 \footline={\hss\rectangle{8pt}{2pt}{25pt}{\tenrm\folio}\hss}
+
+\def\uncatcodespecials{\def\do##1{\catcode`##1=12}\dospecials}
+
+\catcode`\"=\active
+\def"{\leavevmode\hbox\bgroup\let"=\egroup 
+      \def\par{\errmessage{\string\par\space inside \string"...\string"}}%
+      \uncatcodespecials\tt}
+
+{\obeyspaces\global\let =\ } % let active space = control space
+
+\newcount\ttlineno
+\def\begintt{%
+  %%%%%%%%%%%%%
+  \let\islinenumprinted+%
+  %%%%%%%%%%%%%
+  \ttlineno=0\everypar={\advance\ttlineno by1\rlap{\kern13pt\llap{\the\ttlineno:}}}\begtt}
+\def\begtt{%
+  %%%%%%%%%%%%%
+  \ifx\islinenumprinted+%
+  \everypar={\advance\ttlineno by1 \space\hbox to13pt{\hss\the\ttlineno:\kern4pt}}%
+  %                                ^^^^^^ for compatibility with docmy and
+  % when you delete this, compensate kern below (помечено HERE) using tracingoutput
+  \else\everypar={\kern17pt}\fi
+  %%%%%%%%%%%%%
+  \smallskip\hrule\nobreak\smallskip\bgroup
+  \uncatcodespecials \catcode`\^^M=12 \catcode`\"=12 \obeyspaces
+  \def\ttstrut{\vrule height8pt depth3pt width0pt}%
+  \offinterlineskip \parskip=-1pt
+  \hfuzz=4em
+  %%%%%%%%%%%%%
+  \advance\hfuzz by1.4pt
+  %%%%%%%%%%%%%
+  \ttsmall
+  \startverb}
+
+{\catcode`\|=0 \catcode`\^^M=12 \catcode`\\=12 %
+  |gdef|startverb^^M#1\endtt{|runttloop#1|end^^M}} %
+{\catcode`\^^M=12 %
+  \gdef\runttloop#1^^M{\ifx\end#1 \expandafter\endttloop %
+     \else\noindent %
+       %%%%%%%%%\kern17pt\relax % HERE
+       \ttstrut#1\par\penalty12 %
+       \expandafter\runttloop\fi}} %
+\def\endttloop#1{\egroup
+  %%%%%%%%%%%%%%%%
+  \let\islinenumprinted-%
+  %%%%%%%%%%%%%%%%
+  \everypar={}\nobreak\smallskip\hrule\smallskip
+  %%%%%%%%%%%%%%%%
+  \futurelet\nextchar\scannexttoken
+  %%%%%%%%%%%%%%%%
+}
+%%%%%%%%%%%%%%%%
+\long\def\scannexttoken{\ifx\nextchar\par\else\noindent\fi}
+%%%%%%%%%%%%%%%%
+
+\def\sec#1\par{\advance\secnum by1 \subsecnum=0
+  \vskip18pt plus6pt minus6pt
+  \noindent\rectangle{16pt}{9pt}{25pt}{\bbbf\the\secnum}%
+  \kern5pt{\bbbf #1}\par\nobreak\medskip}
+
+\def\subsec#1\par{\advance\subsecnum by1
+  \removelastskip \bigskip
+  \noindent\vbox to0pt{\vss
+    \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
+  \kern5pt{\bbf #1}\par\nobreak\smallskip}
 
 \input epsf
 
@@ -14,8 +91,9 @@
 
 \font\bbf=omb10 at12pt % subsection
 \font\bbbf=omb10 at14.4pt % section
-\font\eightrm=omr8
-\font\eightsl=omsl8
+\font\rmsmall=omr8
+\font\slsmall=omsl8
+\font\ttsmall=omtt8
 
 \newcount\secnum
 \newcount\subsecnum
@@ -25,27 +103,19 @@
   \pretolerance=9999 \tolerance=9999 \parindent=0pt
   \hyphenpenalty=9999 \exhyphenpenalty=9999 }
 
-\rightline{\eightrm
-  \number\year-\ifnum\month<10 0\fi\number\month-\ifnum\day<10 0\fi\number\day\
-  \count255=\time \divide\count255 by60 \ifnum\count255<10 0\fi\number\count255
-  \multiply\count255 by-60 \advance\count255 by\time:\ifnum\count255<10 0\fi\number\count255}
+\rightline{\rmsmall\today\ \hours}
 \nobreak\medskip
 \centerline{\bbbf Установка и настройка системы тарификации}
-\nobreak\medskip
-
-\bigskip
+\nobreak
+\vskip18pt plus6pt minus6pt
 
 \moveright3.7cm\vbox{\hsize10cm\raggedcenter\it Кроме самого сервера, данные настройки необходимо выполнять и на компьютере разработчика, т.к. перед обновлением программы на сервере изменения нужно протестировать.}
-\bigskip
+%%%%\bigskip
 
 \newcount\n
 \def\N{\advance\n by1\indent\hbox to0pt{\hskip-\parindent\bf\the\n.\hfil}}
 
-\removelastskip\bigskip\medskip
-\advance\secnum by1 \subsecnum=0
-\noindent\rectangle{16pt}{9pt}{25pt}{\bbbf\the\secnum}%
-\kern5pt{\bbbf Обзор системы тарификации}\par
-\nobreak\medskip
+\sec Обзор системы тарификации
 
 $$\epsfxsize 15cm \epsfbox{setup-tarif.eps}$$
 TODO: переделать рисунок и fire.mp - теперь сервер в 40-й сети: из asu-100 открыт 22 порт,
@@ -70,23 +140,15 @@ TODO: переделать рисунок и fire.mp - теперь сервер
 
 \noindent
 Доступ к тарификации осуществляется через Web-интерфейс по следующим адресам:
-\item{} {\tt https://192.168.8.4/tarif} \quad {\eightrm получение информации по произвольным параметрам}
-\item{} {\tt https://192.168.8.4/otdel} \quad {\eightrm получение информации по отделам}
+\item{} {\tt https://192.168.8.4/tarif} \quad {\rmsmall получение информации по произвольным параметрам}
+\item{} {\tt https://192.168.8.4/otdel} \quad {\rmsmall получение информации по отделам}
 
 \vfill
 \eject
-\removelastskip\bigskip\medskip
-\advance\secnum by1 \subsecnum=0
-\noindent\rectangle{16pt}{9pt}{25pt}{\bbbf\the\secnum}%
-\kern5pt{\bbbf Тарификационная база данных}\par
-\nobreak\medskip
+\sec Тарификационная база данных
 
-\removelastskip\bigskip
-\advance\subsecnum by1
-\noindent\vbox to0pt{\vss
-  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
-\kern5pt{\bbf Настройка операционной системы}\par
-\nobreak\smallskip
+\subsec Настройка операционной системы
+
 \medskip
 
 Здесь описывается настройка компьютера, не относящаеся непосредственно к программам для тарификации; она играет вспомогательную
@@ -114,7 +176,7 @@ sudo apt-get install \
   libdatetime-format-natural-perl \
   libexcel-writer-xlsx-perl
 \endtt
-\baselineskip=9pt\eightrm
+\baselineskip=9pt\rmsmall
 \noindent
 1) -- команда для установки пакетов;
 2) -- пакет NTP сервера;
@@ -123,9 +185,9 @@ sudo apt-get install \
 5) -- программы для трассировки выполнения программ;
 6) -- пакет SSH сервера;
 7) -- программы для подключения сетевых дисков;
-8) -- заголовочные файлы для компилирования программ, использующих библиотеку {\eightsl pcre\/};
+8) -- заголовочные файлы для компилирования программ, использующих библиотеку {\slsmall pcre\/};
 9) -- программа для запуска долговременных процессов, которые выдают данные на терминал;
-10,11) -- библиотеки {\eightsl perl\/} для скриптов обработки данных.
+10,11) -- библиотеки {\slsmall perl\/} для скриптов обработки данных.
 \par\vskip1mm\normalbaselines\rm
 \medskip
 
@@ -160,12 +222,8 @@ sudo adduser user adm
 \noindent Перезагрузиться.
 \medskip
 
-\removelastskip\bigskip
-\advance\subsecnum by1
-\noindent\vbox to0pt{\vss
-  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
-\kern5pt{\bbf Создание базы данных}\par
-\nobreak\smallskip
+\subsec Создание базы данных
+
 \medskip
 
 Здесь говорится как установить и настроить сервер базы данных {\sl PostgreSQL}.
@@ -182,14 +240,14 @@ sudo apt-get install \
   libdbd-pg-perl \
   libdbix-class-perl
 \endtt
-\baselineskip=9pt\eightrm
+\baselineskip=9pt\rmsmall
 \noindent
 1) -- команда для установки пакетов;
 2) -- пакет сервера базы данных;
 3) -- документация для него;
 4) -- заголовочные файлы для компилирования программ, работающих с базой данных;
-5) -- библиотека {\eightsl perl\/} для обращения к базе;
-6) -- библиотека {\eightsl perl\/} для работы с базой, используемая программами web-интерфейса.
+5) -- библиотека {\slsmall perl\/} для обращения к базе;
+6) -- библиотека {\slsmall perl\/} для работы с базой, используемая программами web-интерфейса.
 \par\vskip1mm\normalbaselines\rm
 \medskip
 
@@ -285,12 +343,8 @@ EOF
 \hangindent=\parindent Индекс "cdr_src" ускоряет выполнение запросов, в которых участвует объединение таблиц "cdr" и "sprav".
 \bigskip
 
-\removelastskip\bigskip
-\advance\subsecnum by1
-\noindent\vbox to0pt{\vss
-  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
-\kern5pt{\bbf Настройка тестовой машины}\par
-\nobreak\smallskip
+\subsec Настройка тестовой машины
+
 \medskip
 
 Для более удобной работы с сервером сделаем следующие настройки:
@@ -311,7 +365,7 @@ ssh ats "cat >id_rsa.pub
   diff id_rsa.pub .ssh/authorized_keys2 | grep -q ^\< && cat id_rsa.pub >> .ssh/authorized_keys2
   rm id_rsa.pub"
 \endtt
-\baselineskip=9pt\eightrm
+\baselineskip=9pt\rmsmall
 \noindent
 1) -- отправить открытый ключ на компьютере разработчика на стандартный вывод;
 2) -- зайти на сервер записать этот открытый ключ во временный файл;
@@ -365,11 +419,7 @@ fi
 
 \vfill
 \eject
-\removelastskip\bigskip\medskip
-\advance\secnum by1 \subsecnum=0
-\noindent\rectangle{16pt}{9pt}{25pt}{\bbbf\the\secnum}%
-\kern5pt{\bbbf Обновление таблицы справочника в базе}\par
-\nobreak\medskip
+\sec Обновление таблицы справочника в базе
 
 \bigskip
 
@@ -379,12 +429,8 @@ fi
 В таблицу {\it PostgreSQL\/} эти данные загружаются из другого источника. В самой базе {\it PostgreSQL\/} справочные данные не меняются (т.к.\ используются только для формирования выборок). Данные меняются только в источнике, поэтому не будет возникать несответствий. В {\it PostgreSQL\/} данные периодически обновляются из источника (делается полная очистка таблицы, и заполнение её новыми данными).
 \medskip
 
-\removelastskip\bigskip
-\advance\subsecnum by1
-\noindent\vbox to0pt{\vss
-  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
-\kern5pt{\bbf Создание таблицы}\par
-\nobreak\smallskip
+\subsec Создание таблицы
+
 \medskip
 
 Данные для таблицы {\tt sprav} берутся из таблицы {\tt Кроссы} в базе Access. Нижеследующие скрипты извлекают данные из этой таблицы, и затем вставляют полученные данные в базу SQL.
@@ -424,12 +470,8 @@ height2pt&\omit&&\omit&&\omit&\cr
 height2pt&\omit&&\omit&&\omit&\cr}\hrule}$$
 \bigskip
 
-\removelastskip\bigskip
-\advance\subsecnum by1
-\noindent\vbox to0pt{\vss
-  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
-\kern5pt{\bbf Заполнение таблицы}\par
-\nobreak\smallskip
+\subsec Заполнение таблицы
+
 \medskip
 
 Здесь описывается как заполнить таблицу "sprav" данными из файла Access.
@@ -496,20 +538,12 @@ perl -pe 's/^/<option>/;s!$!</option>!' | uniq > ~/0000-git/otdels.html
 
 \vfill
 \eject
-\removelastskip\bigskip\medskip
-\advance\secnum by1 \subsecnum=0
-\noindent\rectangle{16pt}{9pt}{25pt}{\bbbf\the\secnum}%
-\kern5pt{\bbbf Настройка web-сервера}\par
-\nobreak\medskip
+\sec Настройка web-сервера
 
 \bigskip
 
-\removelastskip\bigskip
-\advance\subsecnum by1
-\noindent\vbox to0pt{\vss
-  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
-\kern5pt{\bbf Настройка операционной системы}\par
-\nobreak\smallskip
+\subsec Настройка операционной системы
+
 \medskip
 
 Здесь описывается как настроить подключение к серверу тарификации с тестового компьютера.
@@ -522,12 +556,8 @@ perl -pe 's/^/<option>/;s!$!</option>!' | uniq > ~/0000-git/otdels.html
 \endtt
 \medskip
 
-\removelastskip\bigskip
-\advance\subsecnum by1
-\noindent\vbox to0pt{\vss
-  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
-\kern5pt{\bbf Настройка Apache}\par
-\nobreak\smallskip
+\subsec Настройка Apache
+
 \medskip
 
 Здесь описывается как установить и настроить web-сервер.
@@ -747,11 +777,7 @@ sed -i Nd ~/.ssh/known_hosts
 
 \vfill
 \eject
-\removelastskip\bigskip\medskip
-\advance\secnum by1 \subsecnum=0
-\noindent\rectangle{16pt}{9pt}{25pt}{\bbbf\the\secnum}%
-\kern5pt{\bbbf Программы для занесения тарификации в БД}\par
-\nobreak\medskip
+\sec Программы для занесения тарификации в БД
 
 \bigskip
 
