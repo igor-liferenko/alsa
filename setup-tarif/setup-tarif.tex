@@ -3,10 +3,6 @@
 \pdfhorigin=2.5cm \hoffset=\pdfpagewidth \advance\hoffset-\hsize \advance\hoffset-2\pdfhorigin
 \output={\ifodd\pageno\hoffset=0pt\fi \plainoutput}
 
-\showboxdepth=\maxdimen
-\showboxbreadth=\maxdimen
-\tracingoutput=1
-
 \def\today{\number\year-\ifnum\month<10 0\fi\number\month-\ifnum\day<10 0\fi\number\day}
 \def\hours{\count255=\time \divide\count255 by60 \ifnum\count255<10 0\fi\number\count255
   \multiply\count255 by-60 \advance\count255 by\time:\ifnum\count255<10 0\fi\number\count255}
@@ -27,19 +23,9 @@
 {\obeyspaces\global\let =\ } % let active space = control space
 
 \newcount\ttlineno
-\def\begintt{%
-  %%%%%%%%%%%%%
-  \let\islinenumprinted+%
-  %%%%%%%%%%%%%
-  \ttlineno=0\everypar={\advance\ttlineno by1\rlap{\kern13pt\llap{\the\ttlineno:}}}\begtt}
+\def\begintt{\ttlineno=0
+  \everypar={\advance\ttlineno by1 \rlap{\kern13pt\llap{\the\ttlineno:}}}\begtt}
 \def\begtt{%
-  %%%%%%%%%%%%%
-  \ifx\islinenumprinted+%
-  \everypar={\advance\ttlineno by1 \space\hbox to13pt{\hss\the\ttlineno:\kern4pt}}%
-  %                                ^^^^^^ for compatibility with docmy and
-  % when you delete this, compensate kern below (помечено HERE) using tracingoutput
-  \else\everypar={\kern17pt}\fi
-  %%%%%%%%%%%%%
   \smallskip\hrule\nobreak\smallskip\bgroup
   \uncatcodespecials \catcode`\^^M=12 \catcode`\"=12 \obeyspaces
   \def\ttstrut{\vrule height8pt depth3pt width0pt}%
@@ -56,21 +42,10 @@
 {\catcode`\^^M=12 %
   \gdef\runttloop#1^^M{\ifx\end#1 \expandafter\endttloop %
      \else\noindent %
-       %%%%%%%%%\kern17pt\relax % HERE
+       \kern17pt %
        \ttstrut#1\par\penalty12 %
        \expandafter\runttloop\fi}} %
-\def\endttloop#1{\egroup
-  %%%%%%%%%%%%%%%%
-  \let\islinenumprinted-%
-  %%%%%%%%%%%%%%%%
-  \everypar={}\nobreak\smallskip\hrule\smallskip
-  %%%%%%%%%%%%%%%%
-  \futurelet\nextchar\scannexttoken
-  %%%%%%%%%%%%%%%%
-}
-%%%%%%%%%%%%%%%%
-\long\def\scannexttoken{\ifx\nextchar\par\else\noindent\fi}
-%%%%%%%%%%%%%%%%
+\def\endttloop#1{\egroup\everypar={}\nobreak\smallskip\hrule\smallskip}
 
 \def\sec#1\par{\advance\secnum by1 \subsecnum=0
   \vskip18pt plus6pt minus6pt
@@ -110,7 +85,7 @@
 \vskip18pt plus6pt minus6pt
 
 \moveright3.7cm\vbox{\hsize10cm\raggedcenter\it Кроме самого сервера, данные настройки необходимо выполнять и на компьютере разработчика, т.к. перед обновлением программы на сервере изменения нужно протестировать.}
-%%%%\bigskip
+\bigskip
 
 \newcount\n
 \def\N{\advance\n by1\indent\hbox to0pt{\hskip-\parindent\bf\the\n.\hfil}}
@@ -188,7 +163,7 @@ sudo apt-get install \
 8) -- заголовочные файлы для компилирования программ, использующих библиотеку {\slsmall pcre\/};
 9) -- программа для запуска долговременных процессов, которые выдают данные на терминал;
 10,11) -- библиотеки {\slsmall perl\/} для скриптов обработки данных.
-\par\vskip1mm\normalbaselines\rm
+\par\normalbaselines\rm
 \medskip
 
 \noindent Отредактировать "/etc/ssh/sshd_config" следующим образом:
@@ -248,7 +223,7 @@ sudo apt-get install \
 4) -- заголовочные файлы для компилирования программ, работающих с базой данных;
 5) -- библиотека {\slsmall perl\/} для обращения к базе;
 6) -- библиотека {\slsmall perl\/} для работы с базой, используемая программами web-интерфейса.
-\par\vskip1mm\normalbaselines\rm
+\par\normalbaselines\rm
 \medskip
 
 \N
@@ -371,7 +346,7 @@ ssh ats "cat >id_rsa.pub
 2) -- зайти на сервер записать этот открытый ключ во временный файл;
 3) -- проверить есть ли уже этот ключ в файле разрешения доступа, и если нет, то добавить ключ в этот файл;
 4) -- удалить временный файл.
-\par\vskip1mm\normalbaselines\rm
+\par\normalbaselines\rm
 \medskip
 
 На сервере и на компьютере разработчика таблица {\tt cdr} заполняется по-разному: на сервере -- автоматически из тарификационных данных, поступающих со станции; на компьютере разработчика такого источника нет -- поэтому таблица {\tt cdr} заполняется искусственными данными.
