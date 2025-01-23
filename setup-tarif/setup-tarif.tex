@@ -1,0 +1,860 @@
+%&тех
+\hsize=\pdfpagewidth \advance\hsize by-3cm
+\input docmy
+\pdfhorigin=2.5cm \hoffset=\pdfpagewidth \advance\hoffset-\hsize \advance\hoffset-2\pdfhorigin
+\output={\ifodd\pageno\hoffset=0pt\fi \plainoutput}
+
+\footline={\hss\rectangle{8pt}{2pt}{25pt}{\tenrm\folio}\hss}
+
+\input epsf
+
+\parindent=30pt
+\raggedbottom
+\exhyphenpenalty=10000
+
+\font\bbf=omb10 at12pt % subsection
+\font\bbbf=omb10 at14.4pt % section
+\font\eightrm=omr8
+\font\eightsl=omsl8
+
+\newcount\secnum
+\newcount\subsecnum
+
+\def\raggedcenter{\leftskip=0pt plus4em \rightskip=\leftskip
+  \parfillskip=0pt \spaceskip=.3333em \xspaceskip=.5em
+  \pretolerance=9999 \tolerance=9999 \parindent=0pt
+  \hyphenpenalty=9999 \exhyphenpenalty=9999 }
+
+\rightline{\eightrm
+  \number\year-\ifnum\month<10 0\fi\number\month-\ifnum\day<10 0\fi\number\day\
+  \count255=\time \divide\count255 by60 \ifnum\count255<10 0\fi\number\count255
+  \multiply\count255 by-60 \advance\count255 by\time:\ifnum\count255<10 0\fi\number\count255}
+\nobreak\medskip
+\centerline{\bbbf Установка и настройка системы тарификации}
+\nobreak\medskip
+
+\bigskip
+
+\moveright3.7cm\vbox{\hsize10cm\raggedcenter\it Кроме самого сервера, данные настройки необходимо выполнять и на компьютере разработчика, т.к. перед обновлением программы на сервере изменения нужно протестировать.}
+\bigskip
+
+\newcount\n
+\def\N{\advance\n by1\indent\hbox to0pt{\hskip-\parindent\bf\the\n.\hfil}}
+
+\removelastskip\bigskip\medskip
+\advance\secnum by1 \subsecnum=0
+\noindent\rectangle{16pt}{9pt}{25pt}{\bbbf\the\secnum}%
+\kern5pt{\bbbf Обзор системы тарификации}\par
+\nobreak\medskip
+
+$$\epsfxsize 15cm \epsfbox{setup-tarif.eps}$$
+TODO: переделать рисунок и fire.mp - теперь сервер в 40-й сети: из asu-100 открыт 22 порт,
+на asu-100 открыт 80 порт
+\parskip=5pt
+
+\noindent
+Система тарификации имеет модульную структуру. Она включает в себя:
+\item{$\diamond$} база данных {\it PostgreSQL}
+\item{$\diamond$} web-интерфейс для доступа к базе данных
+\item{$\diamond$} компьютеры сбора и буферизации тарификационных данных с телефонных станций
+
+\noindent
+Кроме основных компонентов, существует ряд вспомогательных программ для выполнения следующих функций: периодический сбор тарификационных данных с буферных компьютеров и занесение их в базу данных, конвертация данных из двоичного формата М-200 в текстовый формат, выбока данных через web-интерфейс из базы данных по запросу пользователя и подсчет стоимости звонков, формирование отчёта для пользователя в формате {\it Excel}.
+
+\noindent
+Система тарификации является распределённой: сбор данных происходит с удалённых станций, соединённых компьютерной сетью.
+Компьютер сбора тарификации обязательно нужно подключать отдельно к каждой станции с которой выполняется сбор тарификации. Его необходимо подключать либо через COM-порт, либо через {\sl cross-over} кабель по ethernet (чтоб соединение было всегда точка-точка). Это необходимо для того, чтобы если возникнут неполадки в сети, данные не пропали.
+
+\noindent
+Программа занесения собранных с каждой станции данных периодически выполняется на центральном сервере.
+
+\noindent
+Доступ к тарификации осуществляется через Web-интерфейс по следующим адресам:
+\item{} {\tt https://192.168.8.4/tarif} \quad {\eightrm получение информации по произвольным параметрам}
+\item{} {\tt https://192.168.8.4/otdel} \quad {\eightrm получение информации по отделам}
+
+\vfill
+\eject
+\removelastskip\bigskip\medskip
+\advance\secnum by1 \subsecnum=0
+\noindent\rectangle{16pt}{9pt}{25pt}{\bbbf\the\secnum}%
+\kern5pt{\bbbf Тарификационная база данных}\par
+\nobreak\medskip
+
+\removelastskip\bigskip
+\advance\subsecnum by1
+\noindent\vbox to0pt{\vss
+  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
+\kern5pt{\bbf Настройка операционной системы}\par
+\nobreak\smallskip
+\medskip
+
+Здесь описывается настройка компьютера, не относящаеся непосредственно к программам для тарификации; она играет вспомогательную
+роль и используется последующими скриптами для того, чтобы отличить сервер от тестируемой машины, так как требуется выполнять
+разные действия в зависимости от того на какой машине они выполняются, и при этом пользоваться везде одним и тем же скриптом.
+\smallskip
+
+\N
+Установить ОС (Debian 9) на сервере---при установке выбирать английский язык и английскую
+раскладку,
+стандартный пакет программ, и задать настройки сети (имя компьютера---``"ats"'').
+
+\noindent Установить необходимые программы:
+\begintt
+sudo apt-get install \
+  ntp \
+  gcc \
+  gdb \
+  strace \
+  openssh-server \
+  cifs-utils \
+  libpcre2-dev \
+  screen \
+  libdatetime-perl \
+  libdatetime-format-natural-perl \
+  libexcel-writer-xlsx-perl
+\endtt
+\baselineskip=9pt\eightrm
+\noindent
+1) -- команда для установки пакетов;
+2) -- пакет NTP сервера;
+3) -- компилятор для сборки в исполняемую форму программ сбора тарификации из исходных кодов;
+4) -- отладчик для компилятора;
+5) -- программы для трассировки выполнения программ;
+6) -- пакет SSH сервера;
+7) -- программы для подключения сетевых дисков;
+8) -- заголовочные файлы для компилирования программ, использующих библиотеку {\eightsl pcre\/};
+9) -- программа для запуска долговременных процессов, которые выдают данные на терминал;
+10,11) -- библиотеки {\eightsl perl\/} для скриптов обработки данных.
+\par\vskip1mm\normalbaselines\rm
+\medskip
+
+\noindent Отредактировать "/etc/ssh/sshd_config" следующим образом:
+\begtt
+-#UseDNS no
++UseDNS no
+\endtt
+\medskip
+
+\noindent Отредактировать "/etc/ntp.conf" следующим образом:
+\begtt
+-pool 0.debian.pool.ntp.org iburst
+-pool 1.debian.pool.ntp.org iburst
+-pool 2.debian.pool.ntp.org iburst
+-pool 3.debian.pool.ntp.org iburst
+-
++#pool 0.debian.pool.ntp.org iburst
++#pool 1.debian.pool.ntp.org iburst
++#pool 2.debian.pool.ntp.org iburst
++#pool 3.debian.pool.ntp.org iburst
++server 192.168.40.77
+\endtt
+\medskip
+
+\noindent Добавить пользователя {\sl user\/} в группы:
+\begtt
+sudo adduser user staff
+sudo adduser user adm
+\endtt
+\medskip
+\noindent Перезагрузиться.
+\medskip
+
+\removelastskip\bigskip
+\advance\subsecnum by1
+\noindent\vbox to0pt{\vss
+  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
+\kern5pt{\bbf Создание базы данных}\par
+\nobreak\smallskip
+\medskip
+
+Здесь говорится как установить и настроить сервер базы данных {\sl PostgreSQL}.
+\smallskip
+
+\N
+Установить систему управления базами данных (СУБД), а также некоторые дополнительные программы для работы с ней. \par
+\noindent {\tenbf ЗАМЕЧАНИЕ:} если будет выдано предупреждение, что некоторые пакеты уже установлены, не обращать внимания -- значит эти пакеты нужны для других целей; здесь для полноты мы пишем весь список нужных программ.
+\begintt
+sudo apt-get install \
+  postgresql \
+  postgresql-doc \
+  libpq-dev \
+  libdbd-pg-perl \
+  libdbix-class-perl
+\endtt
+\baselineskip=9pt\eightrm
+\noindent
+1) -- команда для установки пакетов;
+2) -- пакет сервера базы данных;
+3) -- документация для него;
+4) -- заголовочные файлы для компилирования программ, работающих с базой данных;
+5) -- библиотека {\eightsl perl\/} для обращения к базе;
+6) -- библиотека {\eightsl perl\/} для работы с базой, используемая программами web-интерфейса.
+\par\vskip1mm\normalbaselines\rm
+\medskip
+
+\N
+Настроить формат даты в PostgreSQL.
+\begintt
+sudo perl -i -pe "s/datestyle = 'iso, mdy'/datestyle = 'iso, ymd'/" /etc/postgresql/*/main/postgresql.conf \
+&& sudo /etc/init.d/postgresql restart
+\endtt
+\medskip
+
+\N
+Создать пользователя {\tt user} и базу данных {\tt mydb}, необходимых для работы системы тарификации. Имя пользователя базы делать таким же как имя системного пользователя, чтобы можно было просто обращаться к базе с командной строки как "psql mydb".
+\begintt
+sudo -u postgres sh -c 'createuser user && createdb -O user mydb'
+\endtt
+\medskip
+
+\N
+Все подключения к базе данных будут делаться локально через Unix-domain socket, так как база данных находится на той же машине, что и web-сервер. Чтобы web-сервер мог обращаться к базе данных (помимо системного пользователя), нужно указать параметр аутентификации "trust". Для этого файл "pg_hba.conf" нужно изменить следующим образом:
+\begtt
+-local   all             all                                     peer
++local   all             all                                     trust
+\endtt
+\noindent Это можно сделать, выполнив следующую команду:
+\begintt
+sudo perl -i -pe 's/^(local\s+all\s+all\s+)peer$/$1trust/' /etc/postgresql/*/main/pg_hba.conf \
+&& sudo /etc/init.d/postgresql restart
+\endtt
+\medskip
+
+\N
+Тарификационные данные содержатся в таблице {\tt cdr}. Создать таблицу {\tt cdr}.
+\begintt
+psql mydb <<EOF
+  CREATE TABLE cdr (
+    date_time timestamp not null,
+    src varchar(25) not null,
+    dst1 varchar(25) not null,
+    src2 varchar(25) not null,
+    dst varchar(25) not null,
+    sec int not null,
+    code varchar(4) not null,
+    dur int not null,
+    in_trunk varchar(4) not null,
+    out_trunk varchar(4) not null,
+    station_id char(1) not null,
+    reserved varchar(100) not null
+  );
+EOF
+\endtt
+\medskip
+
+Структура таблицы {\tt cdr}:
+\nobreak
+$$\vbox{\offinterlineskip \catcode`_=11
+\hrule
+\halign{\vrule#\tabskip=10pt&\strut\tt#\hfil&\vrule#&\tt#\hfil&\vrule#&\hfil\tt#\hfil&\vrule#\tabskip=0pt\cr
+height2pt&\omit&&\omit&&\omit&\cr
+&\omit\strut\hidewidth\tt Поле\hidewidth&&\omit\hidewidth\tt Тип\hidewidth&&\omit\tt Свойства&\cr
+height2pt&\omit&&\omit&&\omit&\cr
+\noalign{\hrule}
+height2pt&\omit&&\omit&&\omit&\cr
+&date_time&&timestamp without time zone&&not null&\cr
+&src&&character varying(25)&&not null&\cr
+&dst1&&character varying(25)&&not null&\cr
+&src2&&character varying(25)&&not null&\cr
+&dst&&character varying(25)&&not null&\cr
+&sec&&integer&&not null&\cr
+&code&&character varying(4)&&not null&\cr
+&dur&&integer&&not null&\cr
+&in_trunk&&character varying(4)&&not null&\cr
+&out_trunk&&character varying(4)&&not null&\cr
+&station_id&&character(1)&&not null&\cr
+&reserved&&character varying(100)&&not null&\cr
+height2pt&\omit&&\omit&&\omit&\cr}\hrule}$$
+
+Поля "src" и "dst1" содержат номера М-200 до обработки.\par
+Поля "src2" и "dst" содержат номера М-200 после обработки.\par
+\hangindent=\parindent\hangafter=1 Для станций, не выполняющих изменение номеров в таблице маршрутизации (напр., {\it Avaya\/}), полям {\tt src2} и {\tt dst1} должны присваиваться пустые значения.
+\medskip
+
+\N
+Создать индексы для таблицы "cdr".
+\begintt
+psql mydb <<EOF
+  CREATE INDEX cdr_date ON cdr (date(date_time));
+  CREATE INDEX cdr_src ON cdr (src);
+EOF
+\endtt
+\medskip
+\hangindent=\parindent Индекс "cdr_date" ускоряет выполнение запросов по дате (т.е.~по `"date(date_time)"'). \par
+\hangindent=\parindent Индекс "cdr_src" ускоряет выполнение запросов, в которых участвует объединение таблиц "cdr" и "sprav".
+\bigskip
+
+\removelastskip\bigskip
+\advance\subsecnum by1
+\noindent\vbox to0pt{\vss
+  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
+\kern5pt{\bbf Настройка тестовой машины}\par
+\nobreak\smallskip
+\medskip
+
+Для более удобной работы с сервером сделаем следующие настройки:
+\smallskip
+
+\N
+Создать ключ для доступа с тестовой машины на сервер.
+\begintt
+[ -e ~/.ssh/id_rsa ] || ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa -q
+\endtt
+\medskip
+
+\N
+Открыть доступ по ключу с тестовой машины на сервер.
+\begintt
+cat ~/.ssh/id_rsa.pub |
+ssh ats "cat >id_rsa.pub
+  diff id_rsa.pub .ssh/authorized_keys2 | grep -q ^\< && cat id_rsa.pub >> .ssh/authorized_keys2
+  rm id_rsa.pub"
+\endtt
+\baselineskip=9pt\eightrm
+\noindent
+1) -- отправить открытый ключ на компьютере разработчика на стандартный вывод;
+2) -- зайти на сервер записать этот открытый ключ во временный файл;
+3) -- проверить есть ли уже этот ключ в файле разрешения доступа, и если нет, то добавить ключ в этот файл;
+4) -- удалить временный файл.
+\par\vskip1mm\normalbaselines\rm
+\medskip
+
+На сервере и на компьютере разработчика таблица {\tt cdr} заполняется по-разному: на сервере -- автоматически из тарификационных данных, поступающих со станции; на компьютере разработчика такого источника нет -- поэтому таблица {\tt cdr} заполняется искусственными данными.
+\smallskip
+
+\N
+Очистить таблицу {\tt cdr}.
+\begintt
+if [ "$(hostname)" = "ats" ]; then
+  echo 'This cannot be run on server!'
+else
+  psql mydb -c 'DELETE FROM cdr'
+fi
+\endtt
+\medskip
+
+\N
+Выполнить вставку искусственных данных в таблицу {\tt cdr}.
+\begintt
+if [ "$(hostname)" = "ats" ]; then
+  echo 'This cannot be run on server!'
+else
+  YESTERDAY=`date -d "-1 day" +%Y-%m-%d`
+  psql mydb <<EOF
+    INSERT INTO cdr (date_time,src,dst1,src2,dst,sec,code,dur,in_trunk,out_trunk,station_id,reserved)
+    VALUES
+    ( CAST( '2017-11-24'||' 18:56:00' AS timestamp ),'5210','','','5202','5','','0','','','8',''),
+    ( CAST( '2017-11-28'||' 13:52:00' AS timestamp ),'7203','','','7203','0','1','0','7109','812','6','4074'),
+    ( CAST( '2017-11-28'||' 09:39:00' AS timestamp ),'7002','','','89130482785','116','0','0','7136','7220','7','7002'),
+    ( CAST( '2017-11-27'||' 23:57:05' AS timestamp ),'7689','','','7937','13','','0','','','5',''),
+    ( CAST( '$YESTERDAY'||' 09:23:00' AS timestamp ),'39169993867','','','83912441613',48,'9',0,'','5021','0','' ),
+    ( CAST( '2009-09-09'||' 09:23:00' AS timestamp ),'3916993233','','','09',48,'9',0,'','5021','2','' ),
+    ( CAST( '2009-09-08'||' 09:23:00' AS timestamp ),'3916994567','','','83916938690',48,'9',0,'','5021','0','' ),
+    ( CAST( '2009-09-08'||' 09:23:00' AS timestamp ),'3916925734','','','1111',48,'9',0,'','5021','2','' ),
+    ( CAST( '2009-09-07'||' 09:23:00' AS timestamp ),'3916994567','','','83916927548',48,'',0,'','5021','0','' ),
+    ( CAST( '2009-09-06'||' 09:23:00' AS timestamp ),'5428','','','89134869328',48,'9',0,'','5021','2','' ),
+    ( CAST( '2009-09-04'||' 09:23:00' AS timestamp ),'4949','','','89233774829',48,'9',0,'','5021','0','' ),
+    ( CAST( '2009-09-04'||' 08:01:00' AS timestamp ),'5678','','','1111',48,'9',0,'','5021','0','' ),
+    ( CAST( '2009-09-08'||' 09:23:00' AS timestamp ),'3916994567','','','83916992683',48,'9',0,'','5021','0','' ),
+    ( CAST( '2009-09-08'||' 09:23:00' AS timestamp ),'3916920683','','','83916995089',48,'9',0,'','5021','0','' );
+EOF
+fi
+\endtt
+\medskip
+
+\vfill
+\eject
+\removelastskip\bigskip\medskip
+\advance\secnum by1 \subsecnum=0
+\noindent\rectangle{16pt}{9pt}{25pt}{\bbbf\the\secnum}%
+\kern5pt{\bbbf Обновление таблицы справочника в базе}\par
+\nobreak\medskip
+
+\bigskip
+
+В базе {\it PostgreSQL\/} хранятся тарификационные данные. В них содержится телефонный номер и данные об этом номере. Для того, чтобы связать тарификацию с данными об абоненте (напр., подразделение) нам необходима в этой же базе ещё одна таблица. В этой таблице будут содержаться справочные данные (данные, не имеющие телефонного номера, не будут попадать в объединение таблиц). Поле ``номер телефона'' выступает в роли ключа, который связывает эти две таблицы.
+\medskip
+
+В таблицу {\it PostgreSQL\/} эти данные загружаются из другого источника. В самой базе {\it PostgreSQL\/} справочные данные не меняются (т.к.\ используются только для формирования выборок). Данные меняются только в источнике, поэтому не будет возникать несответствий. В {\it PostgreSQL\/} данные периодически обновляются из источника (делается полная очистка таблицы, и заполнение её новыми данными).
+\medskip
+
+\removelastskip\bigskip
+\advance\subsecnum by1
+\noindent\vbox to0pt{\vss
+  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
+\kern5pt{\bbf Создание таблицы}\par
+\nobreak\smallskip
+\medskip
+
+Данные для таблицы {\tt sprav} берутся из таблицы {\tt Кроссы} в базе Access. Нижеследующие скрипты извлекают данные из этой таблицы, и затем вставляют полученные данные в базу SQL.
+\medskip
+
+\N
+Установить программу "mdb-export" для извлечения данных из базы Access.
+\begtt
+sudo apt-get install mdbtools
+\endtt
+\medskip
+
+\N
+Создать таблицу "sprav".
+\begintt
+psql mydb <<EOF
+  CREATE TABLE sprav (
+    otdel varchar(255),
+    nomer_ta varchar(255)
+  );
+EOF
+\endtt
+\medskip
+
+Структура таблицы {\tt sprav}:
+
+$$\vbox{\tabskip=0pt \offinterlineskip \catcode`_=11
+\hrule
+\halign{\vrule#\tabskip=10pt&\strut\tt#\hfil&\vrule#&\tt#\hfil&\vrule#&\hfil\tt#\hfil&\vrule#\tabskip=0pt\cr
+height2pt&\omit&&\omit&&\omit&\cr
+&\omit\strut\hidewidth\tt Поле\hidewidth&&\omit\hidewidth\tt Тип\hidewidth&&\omit\tt Свойства&\cr
+height2pt&\omit&&\omit&&\omit&\cr
+\noalign{\hrule}
+height2pt&\omit&&\omit&&\omit&\cr
+&otdel&&character varying(255)&&&\cr
+&nomer_ta&&character varying(255)&&&\cr
+height2pt&\omit&&\omit&&\omit&\cr}\hrule}$$
+\bigskip
+
+\removelastskip\bigskip
+\advance\subsecnum by1
+\noindent\vbox to0pt{\vss
+  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
+\kern5pt{\bbf Заполнение таблицы}\par
+\nobreak\smallskip
+\medskip
+
+Здесь описывается как заполнить таблицу "sprav" данными из файла Access.
+\smallskip
+
+\N
+Очистить таблицу "sprav".
+\begtt
+psql mydb -c 'delete from sprav'
+\endtt
+\medskip
+
+\N
+Скопировать файл "АТС архив.mdb" в домашний каталог сервера базы данных через WinSCP с ASU-100.
+Файл находится по адресу \hfil\break
+\centerline{\tt Диск S:/Ресурсы подразделений/Отдел телекоммуникационного оборудования/БД/АТС/Архив/}
+
+\N
+Экспортировать таблицу {\tt Кроссы} в текстовый файл.
+\begtt
+mdb-export -Q -H -d'|' ~/"АТС Архив.mdb" Кроссы        >out.txt
+mdb-export -Q -H -d'|' ~/"АТС Архив.mdb" Organisations >org.txt
+\endtt
+\medskip
+
+\N
+Подготовить файл {\tt sprav.sql} с SQL-запросами.
+\begintt
+num=$(mdb-export -Q -d'|' ~/"АТС Архив.mdb" Кроссы |sed -n '1s/|Код подразделения|.*/|/p'|tr -dc '|'|wc -m)
+perl -a -F'\|' -nle "print qq(INSERT INTO sprav (otdel,nomer_ta) VALUES ('@F[$num]','@F[3]');)" < out.txt > sprav.sql
+perl -a -F'\|' -nle "print qq(INSERT INTO sprav (otdel,nomer_ta) VALUES ('1000','@F[3]');) if @F[3]ne''" \
+  < out.txt >> sprav.sql
+rm out.txt
+grep 'АО ПО ЭХЗ' org.txt|perl -a -F'\|' -nle "if(@F[2]ne''){print qq(s/@F[0]/@F[2]/)}else{print qq(s/@F[0]/0/)}" >org.sed
+rm org.txt
+sed -i -f org.sed sprav.sql
+rm org.sed
+sed -i 's/org[0-9]\+//' sprav.sql
+\endtt
+\medskip
+
+\N
+Выполнить вставку новых данных в таблицу {\tt sprav}.
+\begintt
+psql mydb < sprav.sql
+rm sprav.sql
+\endtt
+\medskip
+
+\N
+Создать список подразделений для web-интерфейса.
+\begintt
+mkdir -p ~/0000-git/
+psql mydb -t -c 'select otdel from sprav' | grep -v '^\s*$' | perl -pe 's/^\s+//' | \
+perl -e 'print for sort { $a =~ /^\d/ && $b =~ // ? $a <=> $b : $a cmp $b } <>' | \
+perl -pe 's/^/<option>/;s!$!</option>!' | uniq > ~/0000-git/otdels.html
+\endtt
+\bigskip
+
+\noindent
+Теперь (учитывая что установлен web-сервер -- см.\ следующий раздел) заходим на \hfil\break
+"https://192.168.40.34/otdel" и сохраняем а потом копируем по scp на сервер а потом
+с ASU-100 раскладываем по папкам через WinSCP.
+
+\vfill
+\eject
+\removelastskip\bigskip\medskip
+\advance\secnum by1 \subsecnum=0
+\noindent\rectangle{16pt}{9pt}{25pt}{\bbbf\the\secnum}%
+\kern5pt{\bbbf Настройка web-сервера}\par
+\nobreak\medskip
+
+\bigskip
+
+\removelastskip\bigskip
+\advance\subsecnum by1
+\noindent\vbox to0pt{\vss
+  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
+\kern5pt{\bbf Настройка операционной системы}\par
+\nobreak\smallskip
+\medskip
+
+Здесь описывается как настроить подключение к серверу тарификации с тестового компьютера.
+\smallskip
+
+\N
+Генерируем ssh-ключи (только на сервере).
+\begintt
+[ -e ~/.ssh/id_rsa ] || ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa -q
+\endtt
+\medskip
+
+\removelastskip\bigskip
+\advance\subsecnum by1
+\noindent\vbox to0pt{\vss
+  \rectangle{16pt}{9pt}{25pt}{\bf\the\secnum.\the\subsecnum}\kern-5pt}%
+\kern5pt{\bbf Настройка Apache}\par
+\nobreak\smallskip
+\medskip
+
+Здесь описывается как установить и настроить web-сервер.
+\smallskip
+
+\N
+Устанавливаем web-сервер (Apache), а также некоторые дополнительные пакеты, дающие возможность выполнять на нём программы обработки тарификации.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% TODO: add package which will install all dependencies which apache2-doc installs %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begintt
+sudo apt-get install \
+  apache2-doc \
+  libapache2-mod-perl2 \
+  libapache-db-perl \
+  libapache-session-perl \
+  libtemplate-perl \
+  libtemplate-perl-doc \
+  libdata-formvalidator-perl \
+  libhtml-fillinform-perl \
+  libhtml-tokeparser-simple-perl \
+  libjson-perl \
+  libmime-lite-perl
+\endtt
+\medskip
+
+\N
+Настроить алиасы для простого просмотра логов и для просмотра логов в режиме реального времени.
+\medskip
+{\tt l} -- просто просмотр логов \par
+{\tt t} -- просмотр логов в реальном времени \par
+\medskip
+\begintt
+cat << 'EOF' >> ~/.bashrc
+alias l="less +G /var/log/apache2/error.log"
+alias t="tail -f -n 0 /var/log/apache2/error.log"
+EOF
+. ~/.bashrc
+\endtt
+\medskip
+
+\N
+Настроить алиасы для перезапуска и отладки сервера (на компьютере разработчика).
+\begintt
+cat << 'EOF' >> ~/.bashrc
+alias arst="sudo /etc/init.d/apache2 restart"
+alias adbg="sudo /etc/init.d/apache2 stop && sudo /usr/sbin/apache2ctl -X -DPERLDB"
+EOF
+. ~/.bashrc
+\endtt
+\medskip
+
+\N
+Делаем настройки {\tt sudo}, необходимые для работы алиасов (на компьютере разработчика).
+\begintt
+sudo sh -c 'cat >> /etc/sudoers' << 'EOF'
+user ALL = NOPASSWD: /etc/init.d/apache2 stop, /etc/init.d/apache2 restart, /usr/sbin/apache2ctl -X -DPERLDB
+EOF
+\endtt
+\medskip
+
+\N
+Создать алиас "arst" для загрузки обновлений программ с тестовой машины на сервер и перезапуска apache (только на сервере). \par
+\begintt
+cat << 'EOF' >> ~/.bashrc
+alias arst='cd && rm -fr 0000-git/code/ && mkdir -p 0000-git/ &&
+  scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r `echo $SSH_CLIENT|cut -d" " -f1`:0000-git/code/ 0000-git/ > /dev/null &&
+  sudo /etc/init.d/apache2 restart'
+EOF
+. ~/.bashrc
+\endtt
+\medskip
+
+\N
+Делаем настройки {\tt sudo}, необходимые для работы алиаса "arst" (только на сервере).
+\begintt
+sudo sh -c 'cat >> /etc/sudoers' << 'EOF'
+user ALL = NOPASSWD: /etc/init.d/apache2 restart
+EOF
+\endtt
+\medskip
+
+\N
+Для работы алиаса {\tt arst} без пароля, открыть доступ по ключу с сервера на тестовую машину (на компьютере разработчика).
+\begintt
+ssh ats cat .ssh/id_rsa.pub >>~/.ssh/authorized_keys2
+\endtt
+\medskip
+
+\N
+Задать путь к статическим ресурсам web-сервера.
+\begintt
+sudo rm -r /var/www/html/
+sudo ln -s /home/user/0000-git/code/www/DOCUMENTS/ /var/www/html
+\endtt
+\medskip
+
+\N
+Создать файл для хранения имён пользователей и их паролей доступа к ресурсам web-интерфейса.
+\begintt
+sudo touch /var/www/htpasswd
+sudo chmod 640 /var/www/htpasswd
+sudo chgrp www-data /var/www/htpasswd
+\endtt
+\medskip
+
+\N
+Создать необходимых пользователей.
+\begintt
+sudo htpasswd /var/www/htpasswd имя_нового_пользователя
+\endtt
+\medskip
+
+\N
+Отключить сжатие выдаваемых страниц для отладки через программу "wireshark" (только на компьютере разработчика).
+\begintt
+[ "$(hostname)" = "ats" ] || sudo a2dismod deflate
+\endtt
+\medskip
+
+\N
+Настроить web-сервер для работы программы выдачи тарификации через https
+(порт 443) и для просмотра директории с файлами через http (порт 80). \par
+\noindent {\bf ВНИМАНИЕ:} Заменить {\tt X.X.X.X} на IP-адрес сервера.
+\begintt
+sudo a2ensite default-ssl
+sudo a2enmod ssl
+sudo sh -c 'echo ServerTokens Minimal >> /etc/apache2/apache2.conf'
+sudo sh -c 'echo KeepAlive Off >> /etc/apache2/apache2.conf'
+sudo sh -c 'echo MaxRequestsPerChild 10000 >> /etc/apache2/apache2.conf'
+sudo sh -c 'echo AddDefaultCharset UTF-8 >> /etc/apache2/apache2.conf'
+sudo perl -i -0777 -pe 's/^/ServerName X.X.X.X\n/' \
+  /etc/apache2/sites-enabled/$(readlink /etc/apache2/sites-enabled/default-ssl*)
+sudo perl -i -ne 'print,next if s/^\s*SSLSessionCache\s+.*/SSLSessionCache nonenotnull/;print' \
+  /etc/apache2/mods-available/ssl.conf
+sudo perl -i -ne 'print,next if 
+  s/^\s*SSLCipherSuite\s+.*/SSLCipherSuite ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP/;print' \
+  /etc/apache2/mods-available/ssl.conf
+sudo perl -i -ne \
+  'print,next if s@^\s*SSLCertificateFile\s+.*@SSLCertificateFile /usr/local/SSL/demoCA/newcert.pem@;print' \
+  /etc/apache2/sites-enabled/$(readlink /etc/apache2/sites-enabled/default-ssl*)
+sudo perl -i -ne \
+  'print,next if s@^\s*SSLCertificateKeyFile\s+.*@SSLCertificateKeyFile /usr/local/SSL/demoCA/newkey.pem@;print' \
+  /etc/apache2/sites-enabled/$(readlink /etc/apache2/sites-enabled/default-ssl*)
+sudo perl -i -pe 'print "Include /home/user/0000-git/code/www/httpd.conf\n" if m@</VirtualHost>@' \
+  /etc/apache2/sites-enabled/$(readlink /etc/apache2/sites-enabled/default-ssl*)
+sudo perl -i -pe 's!(?<=DocumentRoot /var/www/)html!dummy!' \
+  /etc/apache2/sites-enabled/$(readlink /etc/apache2/sites-enabled/default-ssl*)
+\endtt
+\medskip
+
+\N
+Сгенерировать SSL-сертификаты. Если ранее они уже были сгенерированы и необходимо их заменить, то нужно сначала удалить директорию "/usr/local/SSL/". \par
+\noindent {\bf ВНИМАНИЕ:} Заменить {\tt X.X.X.X} на IP-адрес сервера. \par
+\begintt
+if [ ! -e '/usr/local/SSL/' ]; then
+  mkdir /usr/local/SSL/
+  cd /usr/local/SSL/
+  mkdir demoCA/
+  mkdir demoCA/private/
+  mkdir demoCA/newcerts/
+  touch demoCA/index.txt
+
+  # Certificate authority:
+  openssl req -config /etc/ssl/openssl.cnf -new \
+    -keyout demoCA/private/cakey.pem -out demoCA/careq.pem -days 730 -nodes \
+    -subj "/countryName=RU/stateOrProvinceName=Krasnoyarskiy kray/organizationName=ecp/commonName=CA team"
+  openssl ca -config /etc/ssl/openssl.cnf -create_serial -out demoCA/cacert.pem -days 730 \
+    -batch -keyfile demoCA/private/cakey.pem -selfsign -extensions v3_ca -infiles demoCA/careq.pem
+
+  # Certificate:
+  openssl req -config /etc/ssl/openssl.cnf -new -nodes -keyout demoCA/newkey.pem -out demoCA/newreq.pem \
+    -days 730 -subj "/commonName=X.X.X.X"
+  openssl ca -config /etc/ssl/openssl.cnf -batch -days 730 \
+    -policy policy_anything -out demoCA/newcert.pem -infiles demoCA/newreq.pem
+
+  cd -
+fi
+\endtt
+\medskip
+
+\N
+Создать директорию для "tempdir" в "0000-git/code/www/Local_Handler/Otdel.pm":
+\begtt
+sudo mkdir /tex_tmp/
+sudo chmod 777 /tex_tmp/
+\endtt
+\medskip
+
+\N
+Скопировать папку {\tt code/} в {\tt \char`~/0000-git/} на компьютере разработчика, после чего запустить apache с новой конфигурацией.
+\begintt
+arst
+\endtt
+\noindent {\tenbf ЗАМЕЧАНИЕ:} на сервере эта команда может выдать подобную ошибку:
+\begtt
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+IT IS POSSIBLE THAT SOMEONE IS DOING SOMETHING NASTY!
+Someone could be eavesdropping on you right now (man-in-the-middle attack)!
+It is also possible that the RSA host key has just been changed.
+The fingerprint for the RSA key sent by the remote host is
+0f:8c:74:9c:f9:87:1f:37:f1:42:3a:72:91:0a:f2:96.
+Please contact your system administrator.
+Add correct host key in /home/user/.ssh/known_hosts to get rid of this message.
+Offending key in /home/user/.ssh/known_hosts:3
+RSA host key for 192.168.40.190 has changed and you have requested strict checking.
+Host key verification failed.
+\endtt
+\noindent В таком случае нужно вначале удалить идентификатор тестовой машины при помощи следующей команды (на сервере): \par\nobreak
+\begtt
+sed -i Nd ~/.ssh/known_hosts
+\endtt
+\noindent Здесь "N" --- это номер строки файла "known_hosts" из сообщения об ошибке (в данном примере "N"="3"). \par
+\noindent (Это сообщение выдается когда компьютер, с которого мы подключаемся к серверу, был переустановлен с момента последнего обращения с сервера на него.)
+
+\vfill
+\eject
+\removelastskip\bigskip\medskip
+\advance\secnum by1 \subsecnum=0
+\noindent\rectangle{16pt}{9pt}{25pt}{\bbbf\the\secnum}%
+\kern5pt{\bbbf Программы для занесения тарификации в БД}\par
+\nobreak\medskip
+
+\bigskip
+
+\noindent
+Программы устанавливаются на центральном сервере. Они нужны для того, чтобы периодически собирать тарификацию с буферных компьютеров и заносить её в базу данных. Пока информация не занесена в базу данных, она не будет доступна для просмотра.
+\smallskip
+\noindent
+Для каждой станции, с которой необходимо собирать тарификацию, создаётся своя программа. Кроме того, что эти программы заносят информацию в базу данных, некоторые из них ещё и конвертируют данные из формата каждой конкретной станции в общий формат (если используется программа сбора тарификации, поставляемая производителем), перед тем как сохранить их в базу. Благодаря этому система тарификации может быть адаптирована для работы с разными типами телефонных станций, при этом для добавления новой станции нужно лишь создать соответствующую программу.
+\bigskip
+
+\noindent
+В текущей конфигурации задействованы следующие программы:
+\medskip
+
+\noindent $\diamond$ {\tt cdr\char`_write\char`_2.pl}
+\item{} - источник сбора данных: М-200 на АТС-2
+\item{} - место нахождения собираемой информации: {\tt /media/ats2/tarif/}
+\item{} - место нахождения лог-файла: {\tt /var/local/ats2.log}
+\smallskip
+
+\noindent $\diamond$ {\tt cdr\char`_write\char`_3.pl}
+\item{} - источник сбора данных: Avaya в зд.~26
+\item{} - место нахождения собираемой информации: {\tt /media/avaya/3/}
+\item{} - место нахождения лог-файла: {\tt /var/local/avaya.log}
+\smallskip
+
+\noindent $\diamond$ {\tt cdr\char`_write\char`_4.pl}
+\item{} - источник сбора данных: М-200 в зд.~26
+\item{} - место нахождения собираемой информации: {\tt /media/upats/tarif/}
+\item{} - место нахождения лог-файла: {\tt /var/local/upats.log}
+\smallskip
+
+\noindent $\diamond$ {\tt gud}
+\item{} - источник сбора данных: Goodwin
+\item{} - место нахождения собираемой информации: {\tt /media/goodwin/}
+\item{} - место нахождения лог-файла: {\tt /var/local/goodwin.log}
+\smallskip
+
+\noindent $\diamond$ {\tt coral-zd5}
+\item{} - источник сбора данных: Coral зд.5
+\item{} - место нахождения собираемой информации: {\tt /media/coral-zd5/}
+\item{} - место нахождения лог-файла: {\tt /var/local/coral-zd5.log}
+\bigskip
+
+\noindent $\diamond$ {\tt coral-w}
+\item{} - источник сбора данных: Coral w
+\item{} - место нахождения собираемой информации: {\tt /media/coral-w/}
+\item{} - место нахождения лог-файла: {\tt /var/local/coral-w.log}
+\bigskip
+
+\penalty-10
+\noindent $\diamond$ {\tt minicom-zd26}
+\item{} - источник сбора данных: minicom зд.26
+\item{} - место нахождения собираемой информации: {\tt /media/minicom-zd26/}
+\item{} - место нахождения лог-файла: {\tt /var/local/minicom-zd26.log}
+\bigskip
+
+\noindent $\diamond$ {\tt minicom-zd4}
+\item{} - источник сбора данных: minicom зд.4
+\item{} - место нахождения собираемой информации: {\tt /media/minicom-zd4/}
+\item{} - место нахождения лог-файла: {\tt /var/local/minicom-zd4.log}
+\bigskip
+
+\noindent
+Первые три скрипта запускаются автоматически при старте системы.
+Для их работы нужно добавить пользователя {\sl user\/} в
+группу {\sl staff\/}: \hfil\break
+\centerline{\tt sudo adduser user staff}
+\medskip
+
+\noindent
+Для запуска этих скриптов нужно добавить следующие строки в `{\tt crontab -e}'
+(они запустятся после перезагрузки): \hfil\break
+\indent {\tt @reboot perl /home/user/0000-git/code/cdr\char`_write\char`_2.pl} \hfil\break
+\indent {\tt @reboot perl /home/user/0000-git/code/cdr\char`_write\char`_3.pl} \hfil\break
+\indent {\tt @reboot perl /home/user/0000-git/code/cdr\char`_write\char`_4.pl} \par
+\medskip
+
+\noindent
+Также, для этих скриптов необходимо создать директории командой \hfil\break
+\centerline{\tt sudo mkdir /media/upats/ /media/ats2/ /media/avaya/}
+и добавить в {\tt /etc/fstab} следующие команды для подключения удалённых дисков
+по сети: \par
+\indent {\tt //192.168.40.141/D /media/upats/ cifs  username=user,password=1,uid=user,port=139 0 0} \hfil\break
+\indent {\tt //192.168.40.125/D /media/ats2/ \ cifs  username=user,password=1,uid=user,port=139 0 0} \hfil\break
+\indent {\tt //192.168.40.199/D /media/avaya/ cifs  guest,uid=user,port=139 0 0}\par
+\medskip
+
+\noindent
+Настройки для гудвина, миникома и корала см.\ в документации к программам {\tt gud}, {\tt minicom-zd4}, {\tt minicom-zd26}, {\tt coral-zd5} и {\tt coral-w}.
+\bigskip
+
+\noindent Помимо программ занесения данных используются соответствующие программы сбора данных:
+
+\noindent $\diamond$ АТС-2 = {\tt SMPSpider+SMPCallBuilder+call\_build.pl} на 192.168.40.125 \par
+\noindent $\diamond$ Avaya = {\tt cdr\_get\_3.pl} на 192.168.40.199 \par
+\noindent $\diamond$ upats = {\tt SMPSpider+SMPCallBuilder+call\_build.pl} на 192.168.40.141 \par
+\noindent $\diamond$ goodwin = {\tt googwin-log.sh} в кроне на 192.168.40.199 \par
+\noindent $\diamond$ Coral w = {\tt cdr-coral-w} в кроне на 192.168.40.53 \par
+\noindent $\diamond$ Coral зд.5 = {\tt cdr-coral-zd5} в кроне на 192.168.40.54 \par
+\noindent $\diamond$ minicom зд.26 = {\tt DX7term+DX7termRestart.pl} на 192.168.40.50 \par % user SVecp012 (input in remmina - not in prompt)
+\noindent $\diamond$ minicom зд.4 = {\tt DX7term+DX7termRestart.pl} на 192.168.40.51 % user 1
+
+\vfill
+\eject
+\bye
