@@ -1,8 +1,3 @@
-*.c
 *.dvi
-*.idx
 *.log
 *.ps
-*.scn
-*.toc
-play
