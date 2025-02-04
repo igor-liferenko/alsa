@@ -23,17 +23,14 @@
 {\obeyspaces\global\let =\ } % let active space = control space
 
 \newcount\ttlineno
-\def\begintt{\ttlineno=0
-  \everypar={\advance\ttlineno by1 \rlap{\kern13pt\llap{\the\ttlineno:}}}\begtt}
+\newif\ifprintlineno
+\def\begintt{\ttlineno=0 \printlinenotrue \begtt}
 \def\begtt{%
   \smallskip\hrule\nobreak\smallskip\bgroup
-  \uncatcodespecials \catcode`\^^M=12 \catcode`\"=12 \obeyspaces
+  \ifprintlineno\everypar={\advance\ttlineno by1 \rlap{\kern13pt\llap{\the\ttlineno:}}}\fi
+  \uncatcodespecials \catcode`\"=12 \catcode`\^^M=12 \obeyspaces
   \def\ttstrut{\vrule height8pt depth3pt width0pt}%
   \offinterlineskip \parskip=-1pt
-  \hfuzz=4em
-  %%%%%%%%%%%%%
-  \advance\hfuzz by1.4pt
-  %%%%%%%%%%%%%
   \ttsmall
   \startverb}
 
@@ -45,7 +42,7 @@
        \kern17pt %
        \ttstrut#1\par\penalty12 %
        \expandafter\runttloop\fi}} %
-\def\endttloop#1{\egroup\everypar={}\nobreak\smallskip\hrule\smallskip}
+\def\endttloop#1{\egroup\printlinenofalse\nobreak\smallskip\hrule\smallskip}
 
 \def\sec#1\par{\advance\secnum by1 \subsecnum=0
   \vskip18pt plus6pt minus6pt
@@ -375,7 +372,8 @@ else
     VALUES
     ( CAST( '2017-11-24'||' 18:56:00' AS timestamp ),'5210','','','5202','5','','0','','','8',''),
     ( CAST( '2017-11-28'||' 13:52:00' AS timestamp ),'7203','','','7203','0','1','0','7109','812','6','4074'),
-    ( CAST( '2017-11-28'||' 09:39:00' AS timestamp ),'7002','','','89130482785','116','0','0','7136','7220','7','7002'),
+    ( CAST( '2017-11-28'||' 09:39:00' AS timestamp ),
+      '7002','','','89130482785','116','0','0','7136','7220','7','7002'),
     ( CAST( '2017-11-27'||' 23:57:05' AS timestamp ),'7689','','','7937','13','','0','','','5',''),
     ( CAST( '$YESTERDAY'||' 09:23:00' AS timestamp ),'39169993867','','','83912441613',48,'9',0,'','5021','0','' ),
     ( CAST( '2009-09-09'||' 09:23:00' AS timestamp ),'3916993233','','','09',48,'9',0,'','5021','2','' ),
@@ -476,11 +474,13 @@ mdb-export -Q -H -d'|' ~/"АТС Архив.mdb" Organisations >org.txt
 Подготовить файл {\tt sprav.sql} с SQL-запросами.
 \begintt
 num=$(mdb-export -Q -d'|' ~/"АТС Архив.mdb" Кроссы |sed -n '1s/|Код подразделения|.*/|/p'|tr -dc '|'|wc -m)
-perl -a -F'\|' -nle "print qq(INSERT INTO sprav (otdel,nomer_ta) VALUES ('@F[$num]','@F[3]');)" < out.txt > sprav.sql
+perl -a -F'\|' -nle "print qq(INSERT INTO sprav (otdel,nomer_ta) VALUES ('@F[$num]','@F[3]');)" \
+  < out.txt > sprav.sql
 perl -a -F'\|' -nle "print qq(INSERT INTO sprav (otdel,nomer_ta) VALUES ('1000','@F[3]');) if @F[3]ne''" \
   < out.txt >> sprav.sql
 rm out.txt
-grep 'АО ПО ЭХЗ' org.txt|perl -a -F'\|' -nle "if(@F[2]ne''){print qq(s/@F[0]/@F[2]/)}else{print qq(s/@F[0]/0/)}" >org.sed
+grep 'АО ПО ЭХЗ' org.txt|perl -a -F'\|' -nle "if(@F[2]ne''){print qq(s/@F[0]/@F[2]/)}else{print qq(s/@F[0]/0/)}" \
+  >org.sed
 rm org.txt
 sed -i -f org.sed sprav.sql
 rm org.sed
@@ -599,7 +599,8 @@ EOF
 \begintt
 cat << 'EOF' >> ~/.bashrc
 alias arst='cd && rm -fr 0000-git/code/ && mkdir -p 0000-git/ &&
-  scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r `echo $SSH_CLIENT|cut -d" " -f1`:0000-git/code/ 0000-git/ > /dev/null &&
+  scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r
+  `echo $SSH_CLIENT|cut -d" " -f1`:0000-git/code/ 0000-git/ > /dev/null &&
   sudo /etc/init.d/apache2 restart'
 EOF
 . ~/.bashrc
