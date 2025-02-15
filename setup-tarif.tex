@@ -29,8 +29,8 @@
   \smallskip\hrule\nobreak\smallskip\bgroup
   \ifprintlineno\everypar={\advance\ttlineno by1 \rlap{\kern13pt\llap{\the\ttlineno:}}}\fi
   \uncatcodespecials \catcode`\"=12 \catcode`\^^M=12 \obeyspaces
-  \def\ttstrut{\vrule height8pt depth3pt width0pt}%
-  \offinterlineskip \parskip=-1pt
+  \def\ttstrut{\vrule height7pt depth2pt width0pt}%
+  \offinterlineskip \parskip=0pt
   \ttsmall
   \startverb}
 
@@ -65,7 +65,7 @@
 \font\bbbf=omb10 at14.4pt % section
 \font\rmsmall=omr8
 \font\slsmall=omsl8
-\font\ttsmall=omtt8
+\font\ttsmall=OMTT8
 
 \newcount\secnum
 \newcount\subsecnum
