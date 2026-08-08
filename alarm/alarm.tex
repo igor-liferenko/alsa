@@ -1,0 +1,127 @@
+%&10pt
+\font\ttsmall=omtt8
+
+\def\setsmallprinting{\ttsmall \let\it=\itsmall \let\rm=\rmsmall 
+   \def\ttstrut{\vrule height8pt depth3pt width0pt}%
+   \offinterlineskip \parskip=-1pt\relax
+}
+
+\def\uncatcodespecials{\def\do##1{\catcode`##1=12}\dospecials}
+
+\def\setupverbatim{\setsmallprinting
+  \def\par{\leavevmode\endgraf}
+  \catcode`\`=\active
+  \catcode`\"=12 % unactivate
+  \obeylines
+  \uncatcodespecials
+  \obeyspaces
+  \everypar{\ttstrut}}
+{\obeyspaces\global\let =\ } % let active space = control space
+{\catcode`\`=\active \gdef`{\relax\lq}}
+
+\def\listing#1{\begingroup\setupverbatim\input#1 \endgroup}
+
+\hsize=210mm \advance\hsize by-3cm
+\vsize=320mm
+\pdfhorigin=1.5cm
+\nopagenumbers
+
+\centerline{\font\bf=omb10 at 17pt \bf Оповещение об авариях М-200}
+\bigskip
+\bigskip
+
+\newcount\n
+\def\N{\advance\n by1\indent\hbox to0pt{\hskip-\parindent\bf\the\n.\hfil}}
+
+\N
+При каждом возникновении аварийного события М-200 запускается звонок по телефону 42-08.
+{\sl Asterisk\/} будет звонить бесконечно пока не поднимут трубку.
+При поднятии трубки проговаривается сообщение об аварии.
+\smallskip
+
+\N
+Первым запускается bat-файл, который указывается в настройках программы {\sl SMPAlarm}.
+Этот bat-файл заносит время срабатывания и сообщение в лог-файл и вызывает {\tt alarm.sh} на
+компьютере с {\sl asterisk},
+под пользователем {\tt user}, по ключу. Ключ генерируется программой
+{\sl genkey\/} из пакета PuTTY, затем добавляется
+в файл {\tt\char`~/.ssh/authorized\char`_keys2} на компьютере с {\sl asterisk}.
+
+При первоначальной настройке соединения требуется подтвердить ssh-сервер.
+Для этого нужно в тревоге указать bat-файл в котором просто
+запускается {\sl putty\/} и вызвать срабатывание этого bat-файла;
+затем вручную соединиться с ssh-сервером и подтвердить, и выйти.
+\smallskip
+
+\N
+Для каждой АТС свой bat-файл. Отличаются только
+именем лог-файла и названиями АТС в имени файла блокировки (см.\ ниже) и ssh-команде.
+Название АТС в ssh-команде используется в
+имени звукового файла.
+Вот пример для {\tt m200upats.bat} (ssh-команда должна идти в одну строку; также
+обратить внимание на формат конца строк):
+\medskip
+\hrule
+\smallskip
+\listing{m200upats.bat}
+\smallskip
+\hrule
+\bigskip
+
+\N
+Иногда соединение
+начинает переходит из рабочего состояния в нерабочее и наоборот. До тех пор
+пока проблема не будет устранена, бывает желательным заблокировать срабатывание обзвона.
+Для этого просто нужно закрыть соответствующую программу {\sl SMPAlarm}.
+\bigskip
+
+\N
+Открыть доступ по сети на сервере АТС. Добавить в настройки {\sl iptables\/} следующее:
+\smallskip
+\centerline{\tt -A INPUT -p tcp --dport 22 -s 192.168.40.141 -j ACCEPT}
+\medskip
+
+\N
+Скрипт {\tt alarm.sh} заносит время срабатывания и сообщение в лог-файл и запускает обзвон.
+
+Вот скрипт {\tt /etc/asterisk/alarm.sh}:
+\medskip
+\hrule
+\smallskip
+\listing{alarm.sh}
+\smallskip
+\hrule
+\bigskip
+
+\N
+Логи будут в файле {\tt /var/log/alarm.log}. Для этого нужно создать файл
+{\tt /etc/rsyslog.d/alarm.conf} со следующим содержимым:
+\smallskip
+\centerline{\tt local0.alert  /var/log/alarm.log}
+\medskip
+
+\N
+Скрипт {\tt alarm.sh} запускается под пользователем {\tt user},
+поэтому чтобы запустить call-файл под пользователем {\tt asterisk}\footnote*{В случае
+если {\sl asterisk\/}
+установлен не из дистрибутива (т.е.~работает под {\tt root}), `{\tt (asterisk)}' здесь
+убрать и в {\tt alarm.sh} вместо
+`{\tt sudo -u asterisk}' писать `{\tt sudo}'; а также убедиться что права на запись в файл
+{\tt call.sh}
+только у рута и что он лежит в директории с правами только рута.}
+(под которым работает {\sl asterisk\/}),
+нужно прописать через {\tt sudo visudo} следующее:
+\smallskip
+\centerline{\tt user ALL = (asterisk) NOPASSWD: /etc/asterisk/call.sh}
+\medskip
+
+\N
+Вот скрипт {\tt /etc/asterisk/call.sh}:
+\medskip
+\hrule
+\smallskip
+\listing{call.sh}
+\smallskip
+\hrule
+
+\bye
