@@ -1,0 +1,18 @@
+\pdfhorigin=5mm
+\hoffset=12mm
+\hsize=\pdfpagewidth \advance\hsize by-2\pdfhorigin \advance\hsize by-\hoffset
+\pdfvorigin=12mm
+\vsize=270mm
+\output={\ifodd\pageno\else\hoffset=0pt\fi \plainoutput}
+
+\def\rectangle#1#2#3#4{\vbox to0pt{\vss\hrule\kern-.3pt
+  \hbox to#3{\vrule height#1 depth#2\hss#4\hss\vrule}%
+  \kern-.3pt\hrule\kern-#2\kern-.1pt}}
+\footline={\ifodd\pageno\hss\fi\vbox to0pt{\kern-5mm
+  \rectangle{13pt}{2pt}{25pt}{\seventeenrm\folio}\vss}\ifodd\pageno\else\hss\fi}
+
+\font\secfont=omb10 at27pt
+\font\subsecfont=ombx10 at20pt
+\input epsf
+\def\sec#1\par{\centerline{\secfont#1}\kern2cm}
+\def\subsec#1\par{\leftline{\subsecfont#1}\medskip}
