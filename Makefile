@@ -6,4 +6,4 @@ eps:
 setup-tarif.eps:
 	@$(inkscape) setup-tarif.svg
 
-inkscape=inkscape -E $@ --export-text-to-path
+inkscape=inkscape --export-type=eps --export-ps-level=2 -T -o $@ 2>/dev/null
