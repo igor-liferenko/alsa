@@ -21,9 +21,10 @@
 
 \def\listing#1{\begingroup\setupverbatim\input#1 \endgroup}
 
-\hsize=210mm \advance\hsize by-3cm
-\vsize=320mm
 \pdfhorigin=1.5cm
+\hsize=210mm \advance\hsize by-3cm
+\pdfvorigin=1.5cm
+\advance\vsize by3cm
 \nopagenumbers
 
 \centerline{\font\bf=omb10 at 17pt \bf Оповещение об авариях М-200}
@@ -103,14 +104,12 @@
 
 \N
 Скрипт {\tt alarm.sh} запускается под пользователем {\tt user},
-поэтому чтобы запустить call-файл под пользователем {\tt asterisk}\footnote*{В случае
+поэтому чтобы запустить call-файл под пользователем {\tt asterisk}\footnote\dag{В случае
 если {\sl asterisk\/}
-установлен не из дистрибутива (т.е.~работает под {\tt root}), `{\tt (asterisk)}' здесь
-убрать и в {\tt alarm.sh} вместо
-`{\tt sudo -u asterisk}' писать `{\tt sudo}'; а также убедиться что права на запись в файл
-{\tt call.sh}
-только у рута и что он лежит в директории с правами только рута.}
-(под которым работает {\sl asterisk\/}),
+установлен из исходного кода, а не из дистрибутива (т.е.~работает под пользователем {\tt root},
+а не {\tt asterisk}),
+убрать `{\tt (asterisk)}' и в {\tt alarm.sh} убрать
+`{\tt -u asterisk}'.},
 нужно прописать через {\tt sudo visudo} следующее:
 \smallskip
 \centerline{\tt user ALL = (asterisk) NOPASSWD: /etc/asterisk/call.sh}
